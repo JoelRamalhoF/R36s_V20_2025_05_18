@@ -63,6 +63,10 @@ Este projeto realizou a engenharia reversa do hardware, reconstruiu os DTBs a pa
 - **Causa:** O multiplexador analógico da placa V20 é fisicamente chaveado pelo **Pino 12** (`GPIO2_B4`), enquanto os DTBs comuns utilizavam o pino 11. Além disso, a deadzone padrão estava em 384 e o analógico direito estava com flags de inversão desnecessárias.
 - **Solução:** Atualizado o nó `/odroidgo3-joypad`: AMUX Enable no pino 12, deadzone ajustada para 64, analógico esquerdo com inversão X/Y e analógico direito com mapeamento direto não invertido.
 
+#### Falha 5: Áudio do Alto-falante Mudo / Inversão no Conector P2
+- **Causa:** O conector mecânico P2 (3.5mm) desta revisão de placa possui uma chave de contato normalmente fechada (lógica inversa). O DTB padrão utilizava `simple-audio-card,hp-det-gpio = <195 22 1>` (`GPIO_ACTIVE_LOW`), fazendo com que o kernel Linux assumisse falsamente que havia fone plugado o tempo todo quando o conector estava vazio, mutando o alto-falante. Quando um fone de ouvido era inserido, o som saía no alto-falante!
+- **Solução:** O pino de detecção de fone foi alterado para polaridade `GPIO_ACTIVE_HIGH` (`0`): `<195 22 0>`. Com isso, o alto-falante toca normalmente no menu e nos jogos, e ao plugar o fone, o alto-falante muta corretamente direcionando o áudio para o conector P2.
+
 ---
 
 ### 4. Como Usar em Qualquer Sistema (Omni36OS, DArkOSen, ArkOS)
@@ -136,6 +140,10 @@ This project reverse-engineered the hardware layout, rebuilt the device trees us
 - **Root Cause:** The board's analog multiplexer enable signal is physically wired to **Pin 12** (`GPIO2_B4`), whereas generic DTBs used pin 11. Generic deadzone was also set to 384, and the right stick had unwanted inversion flags.
 - **Fix:** Patched `/odroidgo3-joypad`: enabled pin 12, set deadzone to 64, inverted left stick axes, and restored standard orientation for the right stick.
 
+#### Issue 5: Silent Internal Speaker / Inverted Headphone Jack Detection (P2)
+- **Root Cause:** The physical 3.5mm headphone jack on this motherboard revision uses a normally closed switch mechanism. The stock DTB set `simple-audio-card,hp-det-gpio = <195 22 1>` (`GPIO_ACTIVE_LOW`), causing the Linux ALSA driver to believe headphones were permanently plugged in when the jack was empty, completely muting the internal speaker. Plugging in headphones reversed the state and enabled the speaker.
+- **Fix:** Patched the headphone detect pin polarity to `GPIO_ACTIVE_HIGH` (`0`): `<195 22 0>`. Now the internal speaker plays normally with no headphones connected, and automatically mutes when headphones are plugged in.
+
 ---
 
 ### 4. File Manifest
@@ -157,3 +165,4 @@ This project reverse-engineered the hardware layout, rebuilt the device trees us
 - **Author & Hardware Architect:** Joel Ramalho ([@JoelRamalhoF](https://github.com/JoelRamalhoF))
 - **Technical Co-pilot:** Antigravity (Google DeepMind)
 - Tested and verified on physical hardware running **Omni36OS** and **DArkOSen**.
+

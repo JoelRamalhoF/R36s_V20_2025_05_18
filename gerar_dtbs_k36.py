@@ -12,6 +12,7 @@ Gera os DTBs estáveis com:
   - Direito: padrão não invertido (Cima=Cima, Baixo=Baixo, Esquerda=Esquerda, Direita=Direita)
 - Deadzone: 64
 - Botões X/Y: Labels corretos
+- Áudio: Headphone Jack Detect invertido para GPIO_ACTIVE_HIGH (0), corrigindo auto-falante
 - DRAM/CPU: Stock seguro (sem crash de memória)
 """
 
@@ -60,6 +61,15 @@ def patch_dtb_k36(src_path, dst_path):
     sw7.set_property('label', 'GPIO BTN-Y')
     sw8.set_property('label', 'GPIO BTN-X')
 
+    # 6. Audio Headphone Jack Detect (hp-det-gpio)
+    # Na placa R36S-V20 2025-05-18 2541, a chave mecanica do plug P2 e invertida.
+    # Polaridade: GPIO_ACTIVE_HIGH (0) em vez de GPIO_ACTIVE_LOW (1), evitando
+    # que o auto-falante fique mutado quando nenhum fone estiver plugado.
+    snd = dt.get_node('/rk817-sound')
+    hp_prop = list(snd.get_property('simple-audio-card,hp-det-gpio'))
+    hp_prop[-1] = 0
+    snd.set_property('simple-audio-card,hp-det-gpio', hp_prop)
+
     new_dtb = dt.to_dtb()
 
     # Validacao de integridade com fdt
@@ -71,6 +81,7 @@ def patch_dtb_k36(src_path, dst_path):
     assert list(cj.get_property('button-adc-deadzone')) == [64]
     assert not cj.exist_property('invert-absrx')
     assert not cj.exist_property('invert-absry')
+    assert list(check_dt.get_node('/rk817-sound').get_property('simple-audio-card,hp-det-gpio')) == [195, 22, 0]
     print("Validacao FDT concluida com sucesso!")
 
     with open(dst_path, 'wb') as f:
